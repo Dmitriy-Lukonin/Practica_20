@@ -1,3 +1,6 @@
+import json
+
+import requests
 import telebot
 
 token = "5799376078:AAHNZx94tPIRx-OszvsoN5T1OTtGS8J-SUk"
@@ -5,7 +8,8 @@ token = "5799376078:AAHNZx94tPIRx-OszvsoN5T1OTtGS8J-SUk"
 bot = telebot.TeleBot(token)
 
 keys = {
-    'Американский доллар': 'USD',
+    'Биткоин': 'BTC',
+    'Доллар': 'USD',
     'Евро': 'EUR',
     'Казахстанский тенге': 'KZT'
 }
@@ -27,6 +31,15 @@ def help(message: telebot.types.Message):
     for key in keys.keys():
         text = '\n'.join((text, key,))
     bot.reply_to(message, text)
+
+
+@bot.message_handler(content_types=['text', ])
+def convert(message: telebot.types.Message):
+    quote, base, amount = message.text.split(' ')
+    r = requests.get(f'https://min-api.cryptocompare.com/data/price?fsym={keys[quote]}&tsyms={keys[base]}')
+    total_base = json.loads(r.content)[keys[base]]
+    text = f'Цена {amount} {quote} в {base} - {total_base}'
+    bot.send_message(message.chat.id, text)
 
 
 bot.polling()
