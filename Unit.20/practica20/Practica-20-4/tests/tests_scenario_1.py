@@ -118,8 +118,8 @@ def test_successful_changes_pet_photo_1(pet_photo=f'images/{random.choice(images
 
 
 # 		1.5. Изменить информацию о питомце
-def test_successful_update_self_pet_info_1(name='Шарик', animal_type='Собака', age=1):
-    """Проверяем возможность обновления информации о питомце"""
+def test_successful_update_self_pet_info_1(name='Бобик', animal_type='', age=''):
+    """Проверяем возможность обновления информации о питомце и выполняем проверку, что не изменились другие данные"""
 
     # Получаем ключ auth_key и список своих питомцев
     _, auth_key, _ = pf.get_api_key(valid_email, valid_password)
@@ -132,6 +132,8 @@ def test_successful_update_self_pet_info_1(name='Шарик', animal_type='Со�
         # Проверяем что статус ответа = 200 и имя питомца соответствует заданному
         assert status == 200
         assert result['name'] == name
+        assert result['animal_type'] != animal_type
+        assert result['age'] != age
         print('\nheaders', res.headers)
         print('\ncookies', res.cookies)  # - мое мнение куки нет, но как их правильно проверить?
         # assert res.headers['content-type'] == 'text/html; charset=utf-8'  # - Ожидаемый ответ в swagger
