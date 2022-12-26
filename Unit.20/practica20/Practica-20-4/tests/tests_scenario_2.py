@@ -2,6 +2,9 @@ import random
 from api import PetFriends
 from settings import no_valid_email, valid_email, no_valid_password, valid_password, images
 import os
+from faker import Faker
+
+fake = Faker()
 
 pf = PetFriends()
 
@@ -236,6 +239,72 @@ def test_successful_delete_self_pet_4_2():
         assert 'Date' in res.headers  # - проверка response headers (как проверить актуальность даты?)
 
 
-''' 5. Сценарий (головная боль разработчика по восстановлению базы питомцев... надеюсь резервные копии БД
+''' Головная боль разработчика по восстановлению базы питомцев... надеюсь резервные копии БД
 делаются регулярно. В этой системе мое мнение собраны все возможные ошибки и уязвимости какие только возможно
-допустить и написать хороший сценарий не представляется возможным)'''
+допустить и написать хороший сценарий не представляется возможным'''
+
+''' 5. Сценарий (пользователь меняет информацию о питомце)'''
+
+
+# 		5.1. Изменить имя питомца
+def test_successful_update_self_pet_info_5_1(name=fake.name(), animal_type='', age=''):
+    """Проверяем возможность обновления имени питомца и выполняем проверку, что не изменились другие данные"""
+
+    # Получаем ключ auth_key и список своих питомцев
+    _, auth_key, _ = pf.get_api_key(valid_email, valid_password)
+    _, my_pets, res = pf.get_list_of_pets(auth_key, "my_pets")
+
+    print('\n', my_pets)
+    print('\n', my_pets['pets'][0]['id'])
+    name1, animal_type1, age1 = my_pets['pets'][0]['name'], my_pets['pets'][0]['animal_type'], my_pets['pets'][0]['age']
+
+    print(name1, animal_type1, age1)
+
+    status, result, res = pf.update_pet_info(auth_key, my_pets['pets'][0]['id'], name, animal_type, age)
+
+    # Проверяем что статус ответа = 200 и имя питомца соответствует заданному
+    assert status == 200
+
+    assert result['name'] != name1
+    assert result['animal_type'] == animal_type1
+    assert result['age'] == age1
+    print('\nheaders', res.headers)
+    print('\ncookies', res.cookies)  # - мое мнение куки нет, но как их правильно проверить?
+    # assert res.headers['content-type'] == 'text/html; charset=utf-8'  # - Ожидаемый ответ в swagger
+    assert res.headers['content-type'] == 'application/json'  # - Фактический результат
+    '''В swagger  content-type: text/html; charset=utf-8, а по факту приходит 'application/json
+    ЭТО БАГ?'''
+    assert 'Date' in res.headers  # - проверка response headers (как проверить актуальность даты?)
+
+
+# 		5.2. Изменить имя питомца
+def test_successful_update_self_pet_info_5_2(name=fake.name(), animal_type='', age=''):
+    """Проверяем что нет возможности изменить данные о питомце с невалидным auth_key"""
+
+    # Получаем ключ auth_key и список своих питомцев
+    _, auth_key, _ = pf.get_api_key(valid_email, valid_password)
+    _, my_pets, res = pf.get_list_of_pets(auth_key, "my_pets")
+
+    name1, animal_type1, age1 = my_pets['pets'][0]['name'], my_pets['pets'][0]['animal_type'], my_pets['pets'][0]['age']
+    pet_id1 = my_pets['pets'][0]['id']
+
+    # Подставляем невалидный auth_key и направляем запрос на изменение
+    status, result, res = pf.update_pet_info({'key': '75e5b31c8b40f6dcdc1733c298c2b7'}, pet_id1, name, animal_type, age)
+
+    # Повторно получаем список своих питомцев
+    _, my_pets, res = pf.get_list_of_pets(auth_key, "my_pets")
+    print(my_pets)
+
+    # из полученного списка нужно найти питомца с pet_id1
+    name2, animal_type2, age2 = my_pets['pets'][0]['name'], my_pets['pets'][0]['animal_type'], my_pets['pets'][0]['age']
+    pet_id2 = my_pets['pets'][0]['id']
+    # Проверяем что статус ответа = 403 и имя питомца и другие данные не изменились
+    assert status == 403  # ожидаемая ошибка
+    assert pet_id2 == pet_id1
+    assert name2 == name1
+    assert animal_type2 == animal_type1
+    assert age2 == age1
+    print('\nheaders', res.headers)
+    print('\ncookies', res.cookies)  # - мое мнение куки нет, но как их правильно проверить?
+    assert res.headers['content-type'] == 'application/json'  # - Ожидаемый ответ в swagger
+    assert 'Date' in res.headers  # - проверка response headers (как проверить актуальность даты?)
