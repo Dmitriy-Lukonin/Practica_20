@@ -54,26 +54,31 @@ def test_add_new_pet_with_valid_data_2_3(name='Буян' * 64, animal_type='Со
 
     # Запрашиваем ключ api и сохраняем в переменную auth_key
     _, auth_key, _ = pf.get_api_key(valid_email, valid_password)
-    print("\nauth_key", auth_key)
 
     # Добавляем питомца
     status, result, res = pf.add_new_pet(auth_key, name, animal_type, age, pet_photo)
     print("#1.3 status", status)
     print("#1.4 result", result)
-
+    print(len(result['name']))
     print('\nheaders', res.headers)
     print('\ncookies', res.cookies)  # - мое мнение куки нет, но как их правильно проверить?
 
     # Сверяем полученный ответ с ожидаемым результатом
     '''assert status == 403 # - ожидаемый результат'''
     assert status == 200  # - фактический результат
-    '''assert result['name'] != name # - ожидаемый результат'''
+    '''assert len(result['name']) < 33 # - ожидаемый результат'''
     assert result['name'] == name  # - фактический результат
-    # assert isinstance(int(result['age']), int)  # - не проходит проверку и это баг
-    # assert res.headers['content-type'] == 'text/html; charset=utf-8'  # - Ожидаемый ответ в swagger
-    assert res.headers['content-type'] == 'application/json'  # - Фактический результат
+    '''assert len(result['animal_type']) < 33 # - ожидаемый результат'''
+    assert result['animal_type'] == animal_type  # - фактический результат
+    '''assert len(result['age']) < 3 # - ожидаемый результат'''
+    assert result['age'] == name  # - фактический результат
+    ''' assert isinstance(int(result['age']), int)  - не проходит проверку и это баг'''
+    assert isinstance(int(result['age']), int)  # - ожидаемо эта проверка не проходит
     '''В swagger  content-type: text/html; charset=utf-8, а по факту приходит 'application/json
     ЭТО БАГ?'''
+    # assert res.headers['content-type'] == 'text/html; charset=utf-8'  # - Ожидаемый ответ в swagger
+    assert res.headers['content-type'] == 'application/json'  # - Фактический результат
+
     assert 'Date' in res.headers  # - проверка response headers (как проверить актуальность даты?)
 
 
