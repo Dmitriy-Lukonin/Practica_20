@@ -55,11 +55,10 @@ def test_add_new_pet_with_valid_data_2_3(name='Буян' * 64, animal_type='Со
                                          pet_photo=f'images/{random.choice(images)}'):
     """Проверяем что нет возможности добавить питомца с валидными данными, когда имя, вид, возраст 256 символов"""
 
-    # Запрашиваем ключ api и сохраняем в переменную auth_key
+    # Запрашиваем ключ api и сохраняем в переменную auth_key и добавляем питомца
     _, auth_key, _ = pf.get_api_key(valid_email, valid_password)
-
-    # Добавляем питомца
     status, result, res = pf.add_new_pet(auth_key, name, animal_type, age, pet_photo)
+
     print("#1.3 status", status)
     print("#1.4 result", result)
     print(len(result['name']))
@@ -74,7 +73,7 @@ def test_add_new_pet_with_valid_data_2_3(name='Буян' * 64, animal_type='Со
     '''assert len(result['animal_type']) < 33 # - ожидаемый результат'''
     assert result['animal_type'] == animal_type  # - фактический результат
     '''assert len(result['age']) < 3 # - ожидаемый результат'''
-    assert result['age'] == name  # - фактический результат
+    assert result['age'] == age  # - фактический результат
     ''' assert isinstance(int(result['age']), int)  - не проходит проверку и это баг'''
     assert isinstance(int(result['age']), int)  # - ожидаемо эта проверка не проходит
     '''В swagger  content-type: text/html; charset=utf-8, а по факту приходит 'application/json
@@ -307,4 +306,28 @@ def test_successful_update_self_pet_info_5_2(name=fake.name(), animal_type='', a
     print('\nheaders', res.headers)
     print('\ncookies', res.cookies)  # - мое мнение куки нет, но как их правильно проверить?
     assert res.headers['content-type'] == 'application/json'  # - Ожидаемый ответ в swagger
+    assert 'Date' in res.headers  # - проверка response headers (как проверить актуальность даты?)
+
+
+# 		5.3. Удалить питомца
+def test_successful_delete_self_pet_5_3():
+    """Проверяем возможность удаления питомца, не валидный auth_key"""
+
+    # Получаем ключ auth_key и запрашиваем список питомцев
+    _, auth_key, _ = pf.get_api_key(valid_email, valid_password)
+    _, my_pets, _ = pf.get_list_of_pets(auth_key, "")
+
+    # Проверяем - если список своих питомцев пустой, то добавляем нового и опять запрашиваем список своих питомцев
+    if len(my_pets['pets']) == 0:
+        pf.add_new_pet(auth_key, "БарBoss", "собака", "10", "images/156.jpg")
+        _, my_pets, res = pf.get_list_of_pets(auth_key, "my_pets")
+
+    # Берём id первого питомца из списка, подставляем невалидный auth_key и отправляем запрос на удаление
+    pet_id = my_pets['pets'][0]['id']
+    status, result, res = pf.delete_pet({'key': '75e5b31c8b40f6dcdc1733c298c2b7'}, pet_id)
+
+    # Проверяем что статус ответа равен 403 и удаление не происходит
+    assert status == 200  # - фактический результат. БАГ.
+    assert pet_id not in my_pets.values()
+    assert res.headers['content-type'] == 'text/html; charset=utf-8'
     assert 'Date' in res.headers  # - проверка response headers (как проверить актуальность даты?)
